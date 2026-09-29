@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Home Game Bank</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F2;--surface:#FFFFFF;--ink:#16201A;--muted:#5C6861;--line:#D8DFD9;
+  --felt:#1C5A42;--felt-2:#164a36;--on-felt:#F2FAF5;--on-felt-muted:#B9D6C7;
+  --chip:#C23A2C;--chip-alt:#2A57A5;--chip-edge:rgba(255,255,255,.78);
+  --win:#17784D;--lose:#B3372B;--warn:#8F5600;--focus:#2A57A5;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1512;--surface:#18201C;--ink:#E7EDE9;--muted:#9AA7A0;--line:#2B3631;
+    --felt:#1E6A4D;--felt-2:#185640;--on-felt:#F2FAF5;--on-felt-muted:#A9CFBC;
+    --chip:#D24B3C;--chip-alt:#4273C8;--chip-edge:rgba(255,255,255,.7);
+    --win:#4CC38A;--lose:#F07C6E;--warn:#E3AA4E;--focus:#86A9F0;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1512;--surface:#18201C;--ink:#E7EDE9;--muted:#9AA7A0;--line:#2B3631;
+  --felt:#1E6A4D;--felt-2:#185640;--on-felt:#F2FAF5;--on-felt-muted:#A9CFBC;
+  --chip:#D24B3C;--chip-alt:#4273C8;--chip-edge:rgba(255,255,255,.7);
+  --win:#4CC38A;--lose:#F07C6E;--warn:#E3AA4E;--focus:#86A9F0;color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:17px;line-height:1.4;font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
+#app{max-width:560px;margin:0 auto;padding:12px 16px 8px;min-height:100%}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+h1,h2,h3{margin:0;line-height:1.15}
+h1{font-size:28px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+
+/* Felt band */
+.band{background:var(--felt);color:var(--on-felt);border-radius:22px;padding:18px 20px 16px;margin:4px 0 18px;
+  background-image:radial-gradient(120% 90% at 20% 0%,rgba(255,255,255,.08),transparent 60%)}
+.band-top{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--on-felt-muted);font-size:15px}
+.band-pot{display:flex;align-items:baseline;gap:10px;margin-top:6px}
+.band-pot strong{font-size:56px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.band-pot span{color:var(--on-felt-muted)}
+.band .ghost{background:rgba(255,255,255,.12);border:0;border-radius:999px;padding:6px 12px;color:var(--on-felt);font-size:15px}
+.band .ghost:hover{background:rgba(255,255,255,.2)}
+
+/* Buttons */
+.primary{display:block;width:100%;border:0;border-radius:16px;padding:16px;background:var(--felt);color:var(--on-felt);font-weight:700;font-size:18px}
+.primary:disabled{opacity:.4;cursor:not-allowed}
+.secondary{display:block;width:100%;border:1.5px solid var(--line);border-radius:16px;padding:14px;background:var(--surface);font-weight:600}
+.danger{color:var(--lose)}
+.textlink{background:none;border:0;padding:8px 0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;font-size:15px}
+.row2{display:grid;grid-template-columns:1fr 1.4fr;gap:10px}
+
+/* Players */
+.players{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.player{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 12px 12px 14px;
+  display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center}
+.pname{background:none;border:0;padding:0;text-align:left;font-weight:700;font-size:19px}
+.bank{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:var(--felt);color:var(--on-felt);font-size:12px;font-weight:700;vertical-align:3px}
+.pin{color:var(--muted);font-size:15px;margin-left:6px;font-weight:400}
+.chips{grid-column:1;display:flex;flex-wrap:wrap;gap:5px;min-height:34px;align-items:center}
+.chip{width:34px;height:34px;border-radius:50%;border:3px dashed var(--chip-edge);background:var(--chip);color:#fff;
+  font-size:11px;font-weight:800;display:grid;place-items:center;padding:0;box-shadow:0 0 0 2px var(--chip) }
+.chip.alt{background:var(--chip-alt);box-shadow:0 0 0 2px var(--chip-alt)}
+.chip-more{font-size:14px;color:var(--muted);padding-left:4px}
+.nochips{font-size:14px;color:var(--muted)}
+.pbtns{grid-column:2;grid-row:1 / span 2;display:grid;gap:6px;justify-items:stretch}
+.buy{border:0;border-radius:14px;background:var(--felt);color:var(--on-felt);font-weight:800;font-size:18px;padding:12px 16px;min-width:92px}
+.other{border:1px solid var(--line);background:transparent;border-radius:12px;padding:6px 10px;font-size:14px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){ .chip.new{animation:drop .28s ease-out} }
+@keyframes drop{from{transform:translateY(-10px) scale(.7);opacity:0}to{transform:none;opacity:1}}
+
+.add{display:flex;gap:8px;margin:14px 0 8px}
+.add input,.field{flex:1;min-width:0;border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px;font-size:17px}
+.add button{border:0;border-radius:14px;padding:0 18px;background:var(--ink);color:var(--bg);font-weight:700}
+.regs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+.reg{border:1.5px dashed var(--line);background:transparent;border-radius:999px;padding:6px 12px;font-size:15px}
+.reg:hover{border-color:var(--felt)}
+.hint{margin:10px 2px 0;font-size:14px;color:var(--muted)}
+
+.foot{position:sticky;bottom:0;padding:14px 0 12px;background:linear-gradient(to bottom,transparent,var(--bg) 35%);margin-top:10px}
+.foot .textlink{display:block;margin:6px auto 0}
+
+/* Home */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:18px}
+.start-row{display:flex;align-items:center;gap:10px;margin:14px 0}
+.money{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:14px;padding:0 12px;background:var(--bg);max-width:140px}
+.money input{border:0;background:transparent;padding:12px 4px;width:100%;font-size:18px;font-weight:700}
+.money input:focus{outline:none}
+.money:focus-within{outline:3px solid var(--focus);outline-offset:1px}
+section.block{margin:22px 0}
+section.block h2{margin-bottom:10px}
+.table{width:100%;border-collapse:collapse}
+.table td{padding:10px 4px;border-top:1px solid var(--line)}
+.table tr:first-child td{border-top:0}
+.table td.num{text-align:right;font-weight:700}
+.win{color:var(--win)} .lose{color:var(--lose)}
+.gamelist{list-style:none;margin:0;padding:0}
+.gamelist button{width:100%;display:flex;justify-content:space-between;gap:10px;background:none;border:0;border-top:1px solid var(--line);padding:12px 4px;text-align:left}
+.gamelist li:first-child button{border-top:0}
+
+/* Cash-out */
+.co{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.co li{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+.co .who{font-weight:700;font-size:18px}
+.co .inline{display:flex;gap:6px;align-items:center;grid-row:1 / span 2;grid-column:2}
+.co .money{max-width:120px;background:var(--bg)}
+.bust{border:1px solid var(--line);background:transparent;border-radius:12px;padding:10px;font-size:14px;color:var(--muted)}
+.check{margin:14px 2px 0;font-weight:600}
+.check.ok{color:var(--win)} .check.bad{color:var(--warn)}
+
+/* Results */
+.pays{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pay{width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px}
+.box{flex:none;width:24px;height:24px;border-radius:7px;border:2px solid var(--muted);display:grid;place-items:center}
+.pay.is-paid{opacity:.55}
+.pay.is-paid .box{background:var(--win);border-color:var(--win);color:#fff}
+.pay.is-paid .ptxt{text-decoration:line-through}
+.pay strong{margin-left:auto}
+.btnstack{display:grid;gap:10px;margin-top:18px}
+
+.banner{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 12px;font-size:15px;color:var(--muted)}
+.loading{padding:80px 0;text-align:center;color:var(--muted)}
+
+/* Sheet */
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none}
+.sheet-back{position:absolute;inset:0;background:rgba(0,0,0,.45);border:0;padding:0;width:100%}
+.sheet-card{position:relative;width:100%;max-width:560px;background:var(--surface);border-radius:22px 22px 0 0;
+  padding:22px 18px calc(18px + env(safe-area-inset-bottom,0px));display:grid;gap:12px}
+.sheet-card textarea{width:100%;min-height:180px;border:1.5px solid var(--line);border-radius:12px;padding:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px}
+@media (prefers-reduced-motion:no-preference){.sheet-card{animation:up .2s ease-out}}
+@keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:15px;max-width:90vw;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheet" class="sheet" hidden>
+  <button class="sheet-back" data-act="closeSheet" aria-label="Close"></button>
+  <div class="sheet-card" role="dialog" aria-modal="true" id="sheet-body"></div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- helpers ---------- */
+const $app = document.getElementById('app');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const r2 = n => Math.round((+n || 0) * 100) / 100;
+const num = v => { const n = parseFloat(String(v ?? '').replace(/[^0-9.]/g, '')); return isFinite(n) ? r2(n) : null; };
+function fmt(n, signed) {
+  n = r2(n); const a = Math.abs(n);
+  const s = a % 1 === 0 ? a.toFixed(0) : a.toFixed(2);
+  const c = S.meta.currency || '$';
+  if (signed) return n > 0 ? '+' + c + s : n < 0 ? '−' + c + s : c + '0';
+  return (n < 0 ? '−' : '') + c + s;
+}
+const fmtDate = iso => { try { return new Date(iso).toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'}); } catch(e) { return ''; } };
+let toastTimer;
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600); }
+
+/* ---------- state ---------- */
+const S = {
+  ready: false, mode: 'local', readOnly: false,
+  meta: {currentGameId: null, buyIn: 20, currency: '$'},
+  games: {}, players: {}, buyins: {},
+  view: null, draft: {}, lastChip: null
+};
+
+/* ---------- local backend (fallback when shared storage isn't available) ---------- */
+const LS = 'homegame-bank:v1';
+function loadLocal() {
+  try { const v = JSON.parse(localStorage.getItem(LS)); if (v && v.meta) return v; } catch (e) {}
+  return {meta: {currentGameId: null, buyIn: 20, currency: '$'}, games: {}, sub: {}};
+}
+let local = loadLocal();
+const sub = gid => (local.sub[gid] ||= {players: {}, buyins: {}});
+function syncLocal() {
+  S.meta = {...local.meta}; S.games = {...local.games};
+  const g = local.sub[S.meta.currentGameId] || {players: {}, buyins: {}};
+  S.players = {...g.players}; S.buyins = {...g.buyins}; S.ready = true; render();
+}
+const localBackend = {
+  setMeta: async m => { local.meta = {...local.meta, ...m}; },
+  setGame: async (id, g) => { local.games[id] = g; },
+  updateGame: async (id, p) => { local.games[id] = {...local.games[id], ...p}; },
+  deleteGame: async id => { delete local.games[id]; delete local.sub[id]; },
+  setPlayer: async (gid, pid, p) => { sub(gid).players[pid] = p; },
+  deletePlayer: async (gid, pid) => { delete sub(gid).players[pid]; },
+  setBuyIn: async (gid, bid, b) => { sub(gid).buyins[bid] = b; },
+  deleteBuyIn: async (gid, bid) => { delete sub(gid).buyins[bid]; },
+  after() { try { localStorage.setItem(LS, JSON.stringify(local)); } catch (e) {} syncLocal(); }
+};
+
+/* ---------- shared backend ---------- */
+function dbBackend(db) {
+  return {
+    setMeta: m => db.doc('app/meta').set({...S.meta, ...m}),
+    setGame: (id, g) => db.doc('games/' + id).set(g),
+    updateGame: (id, p) => db.doc('games/' + id).update(p),
+    deleteGame: async id => {
+      for (const c of ['players', 'buyins']) {
+        const qs = await db.collection('games/' + id + '/' + c).get();
+        for (const d of qs.docs) await db.doc('games/' + id + '/' + c + '/' + d.id).delete();
+      }
+      await db.doc('games/' + id).delete();
+    },
+    setPlayer: (gid, pid, p) => db.doc('games/' + gid + '/players/' + pid).set(p),
+    deletePlayer: (gid, pid) => db.doc('games/' + gid + '/players/' + pid).delete(),
+    setBuyIn: (gid, bid, b) => db.doc('games/' + gid + '/buyins/' + bid).set(b),
+    deleteBuyIn: (gid, bid) => db.doc('games/' + gid + '/buyins/' + bid).delete()
+  };
+}
+let B = localBackend;
+let watched = null, unsubs = [], metaLoaded = false, gamesLoaded = false;
+function onDbErr() { toast('Lost the live connection. Reload the page to reconnect.'); }
+function watchGame(db) {
+  const gid = S.meta.currentGameId || null;
+  if (gid === watched) return;
+  unsubs.forEach(u => u()); unsubs = []; watched = gid; S.players = {}; S.buyins = {};
+  if (!gid) return;
+  unsubs.push(db.collection('games/' + gid + '/players').onSnapshot(qs => {
+    const o = {}; qs.docs.forEach(d => o[d.id] = d.data()); S.players = o; render();
+  }, onDbErr));
+  unsubs.push(db.collection('games/' + gid + '/buyins').onSnapshot(qs => {
+    const o = {}; qs.docs.forEach(d => o[d.id] = d.data()); S.buyins = o; render();
+  }, onDbErr));
+}
+async function connect() {
+  if (!window.claude || typeof window.claude.use !== 'function') return;
+  let db = null;
+  try { db = await window.claude.use('db'); } catch (e) {}
+  if (!db) return;
+  try {
+    const user = await window.claude.use('user');
+    if (user) { const c = await user.can('data.write'); if (c === false) S.readOnly = true; }
+  } catch (e) {}
+  S.mode = 'db'; S.ready = false; B = dbBackend(db); render();
+  const maybeReady = () => { if (metaLoaded && gamesLoaded && !S.ready) { S.ready = true; } };
+  db.doc('app/meta').onSnapshot(snap => {
+    S.meta = {currentGameId: null, buyIn: 20, currency: '$', ...(snap.exists ? snap.data() : {})};
+    metaLoaded = true; watchGame(db); maybeReady(); render();
+  }, onDbErr);
+  db.collection('games').onSnapshot(qs => {
+    const g = {}; qs.docs.forEach(d => g[d.id] = d.data()); S.games = g;
+    gamesLoaded = true; maybeReady(); render();
+  }, onDbErr);
+}
+
+async function act(fn) {
+  if (S.readOnly) { toast("You can view this game but can't change it."); return; }
+  try { await fn(B); if (B.after) B.after(); }
+  catch (e) {
+    console.error(e);
+    if (S.mode === 'db' && e && e.code === 'invalid_argument') { S.readOnly = true; render(); toast("You can view this game but can't change it."); }
+    else toast("That didn't save. Check your connection and try again.");
+  }
+}
+
+/* ---------- derived ---------- */
+const curGame = () => { const id = S.meta.currentGameId; return id && S.games[id] ? {id, ...S.games[id]} : null; };
+const playerList = () => Object.entries(S.players).map(([id, p]) => ({id, ...p})).sort((a, b) => (a.order || 0) - (b.order || 0));
+const buysFor = pid => Object.entries(S.buyins).filter(([, b]) => b.playerId === pid).map(([id, b]) => ({id, ...b})).sort((a, b) => a.t - b.t);
+const totalIn = pid => r2(buysFor(pid).reduce((s, b) => s + (+b.amount || 0), 0));
+const pot = () => r2(Object.values(S.buyins).reduce((s, b) => s + (+b.amount || 0), 0));
+const doneGames = () => Object.entries(S.games).map(([id, g]) => ({id, ...g})).filter(g => g.status === 'done' && Array.isArray(g.results)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+function season() {
+  const m = {};
+  doneGames().slice().reverse().forEach(g => g.results.forEach(r => {
+    const k = r.name.trim().toLowerCase(); const e = (m[k] ||= {name: r.name, games: 0, net: 0});
+    e.name = r.name; e.games++; e.net = r2(e.net + r.net);
+  }));
+  return Object.values(m).sort((a, b) => b.net - a.net);
+}
+function regulars() {
+  const seated = new Set(playerList().map(p => p.name.trim().toLowerCase()));
+  return season().filter(p => !seated.has(p.name.trim().toLowerCase())).sort((a, b) => b.games - a.games).map(p => p.name);
+}
+function cashValue(p) { return (p.id in S.draft) ? S.draft[p.id] : (p.cashOut ?? null); }
+function computeResults() {
+  return playerList().map(p => {
+    const inn = totalIn(p.id); const out = r2(num(cashValue(p)) ?? 0);
+    return {name: p.name, in: inn, out, net: r2(out - inn)};
+  }).filter(r => r.in > 0 || r.out > 0).sort((a, b) => b.net - a.net);
+}
+function computeTransfers(results, banker) {
+  // Everyone settles with the banker: losers pay in, winners get paid out.
+  const key = (banker || '').trim().toLowerCase();
+  const others = results.filter(r => r.name.trim().toLowerCase() !== key);
+  const ins = others.filter(r => r.net < 0).sort((a, b) => a.net - b.net).map(r => ({from: r.name, to: banker, amount: r2(-r.net), dir: 'in'}));
+  const outs = others.filter(r => r.net > 0).sort((a, b) => b.net - a.net).map(r => ({from: banker, to: r.name, amount: r2(r.net), dir: 'out'}));
+  return [...ins, ...outs];
+}
+const bankerOf = g => (g && g.bankerId && S.players[g.bankerId]) ? {id: g.bankerId, ...S.players[g.bankerId]} : null;
+const lastBankerName = () => { const l = doneGames()[0]; return l && l.banker ? l.banker : null; };
+function cashStatus() {
+  const ps = playerList().filter(p => totalIn(p.id) > 0 || num(cashValue(p)) != null);
+  const missing = ps.filter(p => num(cashValue(p)) == null).length;
+  const out = r2(ps.reduce((s, p) => s + (num(cashValue(p)) ?? 0), 0));
+  const diff = r2(out - pot());
+  if (missing) return {ok: false, cls: '', msg: `Enter a cash-out for everyone (${missing} left).`};
+  if (diff > 0) return {ok: false, cls: 'bad', msg: `Cash-outs are ${fmt(diff)} more than the pot. Recount the chips.`};
+  if (diff < 0) return {ok: false, cls: 'bad', msg: `${fmt(-diff)} of the pot isn't counted yet.`};
+  return {ok: true, cls: 'ok', msg: `Balanced. Cash-outs match the ${fmt(pot())} pot.`};
+}
+
+/* ---------- views ---------- */
+function homeView() {
+  const st = season(), past = doneGames();
+  return `
+  <header style="margin:8px 0 16px"><h1>Home game</h1><p class="muted">Buy-ins, cash-outs and who owes who.</p></header>
+  ${S.readOnly ? '' : `
+  <div class="card">
+    <h2>Start tonight's game</h2>
+    <div class="start-row">
+      <label for="buyin-start" class="muted">Buy-in</label>
+      <span class="money">${esc(S.meta.currency || '$')}<input id="buyin-start" inputmode="decimal" value="${esc(S.meta.buyIn ?? 20)}" aria-label="Buy-in amount"></span>
+    </div>
+    <button class="primary" data-act="start">Start game</button>
+  </div>`}
+  <section class="block">
+    <h2>Season standings</h2>
+    ${st.length ? `<table class="table"><tbody>${st.map(p => `
+      <tr><td>${esc(p.name)}</td><td class="muted small">${p.games} game${p.games === 1 ? '' : 's'}</td>
+      <td class="num ${p.net > 0 ? 'win' : p.net < 0 ? 'lose' : ''}">${fmt(p.net, true)}</td></tr>`).join('')}</tbody></table>`
+    : `<p class="muted">Standings show up here after your first game.</p>`}
+  </section>
+  ${past.length ? `<section class="block"><h2>Past games</h2><ul class="gamelist">${past.map(g => {
+      const top = g.results[0];
+      return `<li><button data-act="viewGame" data-gid="${g.id}"><span>${esc(fmtDate(g.date))}<br><span class="muted small">${top && top.net > 0 ? esc(top.name) + ' won ' + fmt(top.net) : 'Settled'}</span></span><span class="muted">${fmt(g.pot || 0)} pot</span></button></li>`;
+    }).join('')}</ul></section>` : ''}`;
+}
+
+function tableView(g) {
+  const ps = playerList(), regs = regulars(), last = doneGames()[0];
+  const hasBuys = Object.keys(S.buyins).length > 0;
+  return `
+  <div class="band">
+    <div class="band-top"><span>${esc(fmtDate(g.date))} · ${ps.length} player${ps.length === 1 ? '' : 's'}${bankerOf(g) ? ' · ' + esc(bankerOf(g).name) + ' is banking' : ''}</span>
+      ${S.readOnly ? `<span>Buy-in ${fmt(g.buyIn)}</span>` : `<button class="ghost" data-act="editBuyIn">Buy-in ${fmt(g.buyIn)}</button>`}</div>
+    <div class="band-pot"><strong>${fmt(pot())}</strong><span>in the pot</span></div>
+  </div>
+  <ul class="players">${ps.map(p => playerRow(p, g)).join('')}</ul>
+  ${ps.length && hasBuys ? `<p class="hint">Tap a chip to take back a buy-in. Tap a name to rename, remove, or make them the banker.</p>` : ''}
+  ${S.readOnly ? '' : `
+  <div class="add">
+    <input id="new-player" placeholder="Add a player" autocomplete="off" enterkeyhint="done" aria-label="Player name">
+    <button data-act="addPlayer">Add</button>
+  </div>
+  ${!ps.length && last ? `<button class="secondary" data-act="seatLast" style="margin-bottom:10px">Seat last game's players (${last.results.length})</button>` : ''}
+  ${regs.length ? `<div class="regs">${regs.slice(0, 12).map(n => `<button class="reg" data-act="addReg" data-name="${esc(n)}">+ ${esc(n)}</button>`).join('')}</div>` : ''}
+  <div class="foot">
+    <button class="primary" data-act="toCashout" ${hasBuys ? '' : 'disabled'}>Cash out</button>
+    ${!hasBuys ? `<button class="textlink" data-act="cancelGame">Cancel this game</button>` : ''}
+  </div>`}`;
+}
+function playerRow(p, g) {
+  const buys = buysFor(p.id), shown = buys.slice(-10), extra = buys.length - shown.length;
+  const chips = shown.map(b => `<button class="chip ${r2(b.amount) === r2(g.buyIn) ? '' : 'alt'} ${S.lastChip === b.id ? 'new' : ''}" data-act="chip" data-bid="${b.id}" aria-label="${esc(fmt(b.amount))} buy-in, tap to remove">${esc(String(r2(b.amount)))}</button>`).join('');
+  return `<li class="player">
+    <div><button class="pname" data-act="playerMenu" data-pid="${p.id}">${esc(p.name)}</button>${g.bankerId === p.id ? '<span class="bank">Banker</span>' : ''}<span class="pin">${fmt(totalIn(p.id))} in</span></div>
+    <div class="chips">${extra > 0 ? `<span class="chip-more">+${extra} more</span>` : ''}${chips || '<span class="nochips">No buy-ins yet</span>'}</div>
+    ${S.readOnly ? '' : `<div class="pbtns"><button class="buy" data-act="buy" data-pid="${p.id}">+ ${fmt(g.buyIn)}</button><button class="other" data-act="buyOther" data-pid="${p.id}">Other amount</button></div>`}
+  </li>`;
+}
+
+function cashoutView(g) {
+  const ps = playerList().filter(p => totalIn(p.id) > 0 || num(cashValue(p)) != null);
+  const st = cashStatus();
+  return `
+  <div class="band">
+    <div class="band-top"><span>Cashing out · ${esc(fmtDate(g.date))}</span></div>
+    <div class="band-pot"><strong>${fmt(pot())}</strong><span>to count out</span></div>
+  </div>
+  <p class="muted" style="margin:0 2px 12px">Enter what each player leaves with.</p>
+  <ul class="co">${ps.map(p => {
+    const v = cashValue(p);
+    return `<li><span class="who">${esc(p.name)}</span>
+      <span class="inline">
+        <span class="money">${esc(S.meta.currency || '$')}<input id="co-${p.id}" data-cash="${p.id}" inputmode="decimal" value="${v == null ? '' : esc(v)}" placeholder="0" aria-label="${esc(p.name)} cash-out" ${S.readOnly ? 'disabled' : ''}></span>
+        ${S.readOnly ? '' : `<button class="bust" data-act="bust" data-pid="${p.id}">Busted</button>`}
+      </span>
+      <span class="muted small">Bought in ${fmt(totalIn(p.id))}</span></li>`;
+  }).join('')}</ul>
+  <p id="check" class="check ${st.cls}">${esc(st.msg)}</p>
+  ${S.readOnly ? '' : `<div class="foot"><div class="row2">
+    <button class="secondary" data-act="backToTable">Back to table</button>
+    <button class="primary" id="settle-btn" data-act="settle" ${st.ok ? '' : 'disabled'}>Settle up</button>
+  </div></div>`}`;
+}
+
+function resultsView(g, isCurrent) {
+  const paid = g.paid || {}, tr = g.transfers || [];
+  const left = tr.filter((t, i) => !paid[i]).length;
+  return `
+  ${!isCurrent ? `<button class="textlink" data-act="back">Back to home</button>` : ''}
+  <div class="band">
+    <div class="band-top"><span>${esc(fmtDate(g.date))} · settled</span></div>
+    <div class="band-pot"><strong>${fmt(g.pot || 0)}</strong><span>pot</span></div>
+  </div>
+  <section class="block" style="margin-top:0">
+    <h2>Results</h2>
+    <table class="table"><tbody>${(g.results || []).map(r => `
+      <tr><td>${esc(r.name)}</td><td class="muted small">${fmt(r.in)} in, ${fmt(r.out)} out</td>
+      <td class="num ${r.net > 0 ? 'win' : r.net < 0 ? 'lose' : ''}">${fmt(r.net, true)}</td></tr>`).join('')}</tbody></table>
+  </section>
+  <section class="block">
+    <h2>Settle with ${esc(g.banker || 'the banker')}</h2>
+    ${tr.length ? `<p class="muted small" style="margin:-4px 0 10px">${esc(g.banker || 'The banker')} collects ${fmt(tr.filter(t => t.dir === 'in').reduce((s, t) => s + t.amount, 0))} and pays out ${fmt(tr.filter(t => t.dir === 'out').reduce((s, t) => s + t.amount, 0))}. ${left ? `${left} payment${left === 1 ? '' : 's'} left, tick them off as they happen.` : 'All paid up.'}</p>` : ''}
+    ${tr.length ? `<ul class="pays">${tr.map((t, i) => `<li>
+      <button class="pay ${paid[i] ? 'is-paid' : ''}" data-act="paid" data-gid="${g.id}" data-k="${i}" aria-pressed="${!!paid[i]}" ${S.readOnly ? 'disabled' : ''}>
+        <span class="box" aria-hidden="true">${paid[i] ? '✓' : ''}</span>
+        <span class="ptxt">${esc(t.from)} pays ${esc(t.to)}</span><strong>${fmt(t.amount)}</strong>
+      </button></li>`).join('')}</ul>` : `<p class="muted">Everyone broke even. Nobody owes anything.</p>`}
+  </section>
+  <div class="btnstack">
+    <button class="secondary" data-act="copy" data-gid="${g.id}">Copy results for the group chat</button>
+    ${isCurrent && !S.readOnly ? `<button class="primary" data-act="closeGame">Done</button>
+      <button class="textlink" data-act="reopen">Fix cash-outs</button>` : ''}
+    ${!isCurrent && !S.readOnly ? `<button class="textlink danger" data-act="deleteGame" data-gid="${g.id}">Delete this game</button>` : ''}
+  </div>`;
+}
+
+function render() {
+  const a = document.activeElement, focus = a && a.id ? {id: a.id, s: a.selectionStart, e: a.selectionEnd} : null;
+  let html;
+  if (!S.ready) html = `<div class="loading">Loading the table…</div>`;
+  else if (S.view && S.games[S.view]) html = resultsView({id: S.view, ...S.games[S.view]}, false);
+  else {
+    const g = curGame();
+    if (!g) html = homeView();
+    else if (g.status === 'live') html = tableView(g);
+    else if (g.status === 'cashout') html = cashoutView(g);
+    else html = resultsView(g, true);
+  }
+  const banner = S.readOnly ? `<div class="banner">You're watching live. The host keeps the bank.</div>` : '';
+  $app.innerHTML = banner + html;
+  S.lastChip = null;
+  if (focus) { const el = document.getElementById(focus.id); if (el) { el.focus(); try { el.setSelectionRange(focus.s, focus.e); } catch (e) {} } }
+}
+function updateCheck() {
+  const st = cashStatus(), c = document.getElementById('check'), b = document.getElementById('settle-btn');
+  if (c) { c.textContent = st.msg; c.className = 'check ' + st.cls; }
+  if (b) b.disabled = !st.ok;
+}
+
+/* ---------- sheet ---------- */
+const sheet = document.getElementById('sheet'), sheetBody = document.getElementById('sheet-body');
+function openSheet(html, focusId) {
+  sheetBody.innerHTML = html; sheet.hidden = false;
+  const f = focusId && document.getElementById(focusId); if (f) setTimeout(() => { f.focus(); f.select && f.select(); }, 30);
+}
+function closeSheet() { sheet.hidden = true; sheetBody.innerHTML = ''; }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
+
+/* ---------- actions ---------- */
+function addPlayerByName(name) {
+  const g = curGame(); name = (name || '').trim(); if (!g || !name) return;
+  if (playerList().some(p => p.name.trim().toLowerCase() === name.toLowerCase())) { toast(name + ' is already at the table.'); return; }
+  const pid = uid(), lb = lastBankerName();
+  const makeBanker = !bankerOf(g) || (lb && lb.trim().toLowerCase() === name.toLowerCase() && bankerOf(g).name.trim().toLowerCase() !== lb.trim().toLowerCase());
+  return act(async b => {
+    await b.setPlayer(g.id, pid, {name: name.slice(0, 40), order: Date.now(), cashOut: null});
+    if (makeBanker) await b.updateGame(g.id, {bankerId: pid});
+  });
+}
+function addBuy(pid, amount) {
+  const g = curGame(); if (!g || !(amount > 0)) return;
+  const bid = uid(); S.lastChip = bid;
+  const p = S.players[pid];
+  act(b => b.setBuyIn(g.id, bid, {playerId: pid, amount: r2(amount), t: Date.now()}));
+  if (p) toast(`${p.name} bought in ${fmt(amount)}`);
+}
+function resultsText(g) {
+  const lines = [`Poker night, ${fmtDate(g.date)}. Pot ${fmt(g.pot || 0)}`, ''];
+  (g.results || []).forEach(r => lines.push(`${r.name}: ${fmt(r.net, true)}`));
+  if ((g.transfers || []).length) { lines.push('', `Settle with ${g.banker || 'the banker'}:`); g.transfers.forEach(t => lines.push(`${t.from} pays ${t.to} ${fmt(t.amount)}`)); }
+  return lines.join('\n');
+}
+
+const H = {
+  closeSheet,
+  start() {
+    const amt = num(document.getElementById('buyin-start')?.value) || 20;
+    const gid = uid();
+    act(async b => {
+      await b.setGame(gid, {date: new Date().toISOString(), status: 'live', buyIn: amt, createdAt: Date.now(), paid: {}});
+      await b.setMeta({currentGameId: gid, buyIn: amt});
+    });
+  },
+  addPlayer() { const i = document.getElementById('new-player'); const v = i.value; i.value = ''; addPlayerByName(v); },
+  addReg(d) { addPlayerByName(d.name); },
+  seatLast() {
+    const g = curGame(), last = doneGames()[0]; if (!g || !last) return;
+    act(async b => {
+      let o = Date.now(), bank = null;
+      for (const r of last.results) { const pid = uid(); await b.setPlayer(g.id, pid, {name: r.name, order: o++, cashOut: null}); if (!bank || (last.banker && r.name === last.banker)) bank = pid; }
+      if (bank) await b.updateGame(g.id, {bankerId: bank});
+    });
+  },
+  buy(d) { const g = curGame(); addBuy(d.pid, g.buyIn); },
+  buyOther(d) {
+    const p = S.players[d.pid]; if (!p) return;
+    openSheet(`<h2>Buy-in for ${esc(p.name)}</h2>
+      <span class="money" style="max-width:none">${esc(S.meta.currency || '$')}<input id="other-amt" inputmode="decimal" placeholder="Amount"></span>
+      <button class="primary" data-act="confirmOther" data-pid="${d.pid}">Add buy-in</button>
+      <button class="secondary" data-act="closeSheet">Cancel</button>`, 'other-amt');
+  },
+  confirmOther(d) { const a = num(document.getElementById('other-amt')?.value); if (!a) { toast('Enter an amount.'); return; } closeSheet(); addBuy(d.pid, a); },
+  chip(d) {
+    if (S.readOnly) return;
+    const b = S.buyins[d.bid]; if (!b) return; const p = S.players[b.playerId];
+    openSheet(`<h2>Take back this buy-in?</h2><p class="muted">${esc(fmt(b.amount))} from ${esc(p ? p.name : 'this player')}.</p>
+      <button class="primary" style="background:var(--lose)" data-act="confirmRemoveChip" data-bid="${d.bid}">Remove ${esc(fmt(b.amount))}</button>
+      <button class="secondary" data-act="closeSheet">Keep it</button>`);
+  },
+  confirmRemoveChip(d) { const g = curGame(); closeSheet(); act(b => b.deleteBuyIn(g.id, d.bid)); },
+  playerMenu(d) {
+    if (S.readOnly) return;
+    const p = S.players[d.pid]; if (!p) return; const n = buysFor(d.pid).length;
+    openSheet(`<h2>${esc(p.name)}</h2>
+      <input class="field" id="rename" value="${esc(p.name)}" aria-label="Player name">
+      <button class="primary" data-act="rename" data-pid="${d.pid}">Save name</button>
+      ${curGame().bankerId === d.pid ? `<p class="muted small">${esc(p.name)} is the banker.</p>` : `<button class="secondary" data-act="setBanker" data-pid="${d.pid}">Make ${esc(p.name)} the banker</button>`}
+      ${n ? `<p class="muted small">Take back their buy-ins first to remove them from the game.</p>` : `<button class="secondary danger" data-act="removePlayer" data-pid="${d.pid}">Remove from game</button>`}
+      <button class="secondary" data-act="closeSheet">Cancel</button>`);
+  },
+  rename(d) {
+    const g = curGame(), v = (document.getElementById('rename')?.value || '').trim(); if (!v) return;
+    closeSheet(); act(b => b.setPlayer(g.id, d.pid, {...S.players[d.pid], name: v.slice(0, 40)}));
+  },
+  removePlayer(d) {
+    const g = curGame(); closeSheet();
+    act(async b => {
+      await b.deletePlayer(g.id, d.pid);
+      if (g.bankerId === d.pid) { const next = playerList().find(p => p.id !== d.pid); await b.updateGame(g.id, {bankerId: next ? next.id : null}); }
+    });
+  },
+  setBanker(d) { const g = curGame(); closeSheet(); act(b => b.updateGame(g.id, {bankerId: d.pid})); },
+  editBuyIn() {
+    const g = curGame();
+    openSheet(`<h2>Buy-in amount</h2><p class="muted">Changes the quick-add button. Buy-ins already made stay the same.</p>
+      <span class="money" style="max-width:none">${esc(S.meta.currency || '$')}<input id="edit-buyin" inputmode="decimal" value="${esc(g.buyIn)}"></span>
+      <button class="primary" data-act="saveBuyIn">Save</button><button class="secondary" data-act="closeSheet">Cancel</button>`, 'edit-buyin');
+  },
+  saveBuyIn() {
+    const g = curGame(), a = num(document.getElementById('edit-buyin')?.value); if (!a) { toast('Enter an amount.'); return; }
+    closeSheet(); act(async b => { await b.updateGame(g.id, {buyIn: a}); await b.setMeta({buyIn: a}); });
+  },
+  cancelGame() {
+    openSheet(`<h2>Cancel this game?</h2><p class="muted">No buy-ins have been recorded, so nothing will be lost.</p>
+      <button class="primary" style="background:var(--lose)" data-act="confirmCancel">Cancel game</button><button class="secondary" data-act="closeSheet">Keep playing</button>`);
+  },
+  confirmCancel() { const g = curGame(); closeSheet(); act(async b => { await b.setMeta({currentGameId: null}); await b.deleteGame(g.id); }); },
+  toCashout() { const g = curGame(); S.draft = {}; act(b => b.updateGame(g.id, {status: 'cashout'})); },
+  backToTable() { const g = curGame(); act(b => b.updateGame(g.id, {status: 'live'})); },
+  bust(d) { S.draft[d.pid] = '0'; const i = document.getElementById('co-' + d.pid); if (i) i.value = '0'; saveCash(d.pid); updateCheck(); },
+  settle() {
+    const g = curGame(); if (!cashStatus().ok) return;
+    const bk = bankerOf(g) || playerList()[0]; const banker = bk ? bk.name : 'Banker';
+    const results = computeResults(), transfers = computeTransfers(results, banker);
+    act(b => b.updateGame(g.id, {status: 'done', results, transfers, banker, pot: pot(), paid: {}}));
+  },
+  reopen() { const g = curGame(); S.draft = {}; act(b => b.updateGame(g.id, {status: 'cashout'})); },
+  closeGame() { act(b => b.setMeta({currentGameId: null})); },
+  viewGame(d) { S.view = d.gid; render(); window.scrollTo(0, 0); },
+  back() { S.view = null; render(); },
+  paid(d) {
+    const g = S.games[d.gid]; if (!g) return; const paid = {...(g.paid || {})};
+    paid[d.k] = !paid[d.k]; act(b => b.updateGame(d.gid, {paid}));
+  },
+  async copy(d) {
+    const g = S.games[d.gid]; if (!g) return; const text = resultsText(g);
+    try { await navigator.clipboard.writeText(text); toast('Copied. Paste it in the group chat.'); }
+    catch (e) {
+      openSheet(`<h2>Copy results</h2><textarea id="copytext" readonly>${esc(text)}</textarea><button class="secondary" data-act="closeSheet">Close</button>`);
+      const t = document.getElementById('copytext'); t.focus(); t.select();
+    }
+  },
+  deleteGame(d) {
+    openSheet(`<h2>Delete this game?</h2><p class="muted">It will be removed from the season standings. This can't be undone.</p>
+      <button class="primary" style="background:var(--lose)" data-act="confirmDelete" data-gid="${d.gid}">Delete game</button><button class="secondary" data-act="closeSheet">Keep it</button>`);
+  },
+  confirmDelete(d) {
+    closeSheet(); S.view = null;
+    act(async b => { if (S.meta.currentGameId === d.gid) await b.setMeta({currentGameId: null}); await b.deleteGame(d.gid); });
+  }
+};
+
+function saveCash(pid) {
+  const g = curGame(); const p = S.players[pid]; if (!g || !p) return;
+  const raw = S.draft[pid]; const v = (raw === '' || raw == null) ? null : num(raw);
+  if (v === (p.cashOut ?? null)) return;
+  act(b => b.setPlayer(g.id, pid, {...p, cashOut: v})).then(() => { delete S.draft[pid]; });
+}
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
+  const f = H[el.dataset.act]; if (f) f(el.dataset, el);
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const id = e.target.id;
+  if (id === 'new-player') { e.preventDefault(); H.addPlayer(); }
+  else if (id === 'other-amt') { e.preventDefault(); document.querySelector('[data-act="confirmOther"]')?.click(); }
+  else if (id === 'edit-buyin') { e.preventDefault(); H.saveBuyIn(); }
+  else if (id === 'rename') { e.preventDefault(); document.querySelector('[data-act="rename"]')?.click(); }
+  else if (id === 'buyin-start') { e.preventDefault(); H.start(); }
+  else if (e.target.dataset && e.target.dataset.cash) { e.preventDefault(); e.target.blur(); }
+});
+document.addEventListener('input', e => {
+  const pid = e.target.dataset && e.target.dataset.cash; if (!pid) return;
+  S.draft[pid] = e.target.value; updateCheck();
+});
+document.addEventListener('change', e => {
+  const pid = e.target.dataset && e.target.dataset.cash; if (!pid) return;
+  S.draft[pid] = e.target.value; saveCash(pid);
+});
+
+/* ---------- boot ---------- */
+syncLocal();
+connect();
+</script>
+</body>
+</html>
